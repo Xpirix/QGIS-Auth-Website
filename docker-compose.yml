@@ -1,0 +1,105 @@
+volumes:
+  postgres_data:
+
+services:
+  db:
+    container_name: qgis-login-db
+    image: kartoza/postgis:${POSTGIS_VERSION:-latest}
+    environment:
+      - ALLOW_IP_RANGE=0.0.0.0/0
+      - POSTGRES_USER=${DATABASE_USERNAME:-docker}
+      - POSTGRES_PASS=${DATABASE_PASSWORD:-docker}
+      - PASSWORD_AUTHENTICATION=${PASSWORD_AUTHENTICATION:-md5}
+      - DATADIR=/opt/postgres/data
+      - DEFAULT_ENCODING=UTF8
+      - DEFAULT_COLLATION=en_GB.utf8
+      - DEFAULT_CTYPE=en_GB.utf8
+    volumes:
+      - postgres_data:/opt/postgres/data
+      - ${QGIS_LOGIN_BACKUP_VOLUME}:/backups
+    restart: unless-stopped
+    networks:
+      internal:
+
+  keycloak:
+    container_name: qgis-login-keycloak
+    image: quay.io/keycloak/keycloak:${KEYCLOAK_VERSION:-latest}
+    command: ${KEYCLOAK_COMMAND:-start}
+    environment:
+      KC_DB: postgres
+      KC_DB_URL_HOST: ${KC_DB_URL_HOST:-db}
+      KC_DB_URL_DATABASE: ${KC_DB_URL_DATABASE:-gis}
+      KC_DB_PASSWORD: ${DATABASE_PASSWORD:-docker}
+      KC_DB_USERNAME: ${DATABASE_USERNAME:-docker}
+      KC_DB_SCHEMA: ${KC_DB_SCHEMA:-public}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-password}
+    ports:
+      - 8081:8080
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      internal:
+  
+  web:
+    # Note you cannot scale if you use container_name
+    container_name: qgis-login-web
+    image: nginx
+    hostname: web
+    entrypoint:
+    - /etc/nginx/sites-available/docker-entrypoint.sh
+    ports:
+    - "80:80"
+    - "443:443"
+    volumes:
+      - ./sites-enabled:/etc/nginx/sites-available/:ro
+      - ./webroot:/var/www/webroot
+      - ./certbot-etc:/etc/letsencrypt
+    depends_on:
+      - keycloak
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "10"
+    restart: unless-stopped
+    command:
+    - ${QGIS_LOGIN_ENV}
+    networks:
+      internal:
+
+  dbbackups:
+    image: kartoza/pg-backup:${DBBACKUPS_VERSION:-latest}
+    hostname: pg-backups
+    volumes:
+      - ${QGIS_LOGIN_BACKUP_VOLUME}:/backups
+    depends_on:
+      - db
+    environment:
+      # take care to let the project name below match that
+      # declared in the top of the makefile
+      - DUMPPREFIX=${DUMPPREFIX:-QGIS_LOGIN}
+      - POSTGRES_USER=${DATABASE_USERNAME:-docker}
+      - POSTGRES_PASS=${DATABASE_PASSWORD:-docker}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_HOST=${DATABASE_HOST:-db}
+      - PGDATABASE=${DATABASE_NAME:-gis}
+    restart: unless-stopped
+    networks:
+      internal:
+
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    volumes:
+      - ./webroot:/var/www/webroot
+      - ./certbot-etc:/etc/letsencrypt
+    depends_on:
+      - web
+    command: certonly --webroot --webroot-path=/var/www/webroot --email admin@qgis.org --agree-tos --no-eff-email --force-renewal -d ${DOMAIN_NAME:-login.qgis.org}
+    networks:
+      internal:
+
+networks:
+    internal:
