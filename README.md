@@ -6,7 +6,7 @@ This repository contains the setup for our login service using Keycloak.
 
 - Clone the repository and enter the directory:
 ```sh
-git clone https://
+git clone https://github.com/Xpirix/QGIS-Login-Website.git
 cd QGIS-Login-Website
 ```
 
@@ -19,8 +19,10 @@ Make sure to set the KEYCLOAK_COMMAND value to start-dev.
 
 - Run the project:
 ```sh
-make start-dev
+make devweb
 ```
+
+On your browser, visit http://localhost:8081
 
 ## Production setup
 
@@ -29,5 +31,5 @@ Clone the repo and generate the .env file as done in the [Development](#developm
 
 - Run the project:
 ```sh
-make start-dev
+make web
 ```
