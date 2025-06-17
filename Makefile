@@ -1,10 +1,10 @@
-PROJECT_ID := qgis-login
+PROJECT_ID := qgis-auth
 
 SHELL := /usr/bin/env bash
 
 default: help
 help:
-	@echo "Makefile for QGIS Login project"
+	@echo "Makefile for QGIS Auth project"
 	@echo "Available commands:"
 	@echo "  make db           - Start the database container"
 	@echo "  make logs [c=...] - Tail logs for all or a specific container"
@@ -20,7 +20,7 @@ help:
 db:
 	@echo
 	@echo "------------------------------------------------------------------"
-	@echo "Running db container for QGIS Login project..."
+	@echo "Running db container for QGIS Auth project..."
 	@echo "------------------------------------------------------------------"
 	@docker compose -p $(PROJECT_ID) up -d db
 
@@ -57,7 +57,7 @@ kill:
 #    P R O D U C T I O N     C O M M A N D S
 # ----------------------------------------------------------------------------
 web: db
-	@echo "Starting QGIS Login project..."
+	@echo "Starting QGIS Auth project..."
 	docker compose -p $(PROJECT_ID) up -d keycloak web dbbackups
 
 certbot: web
@@ -85,5 +85,5 @@ nginx-logs:
 #    D E V E L O P M E N T     C O M M AN D S
 # ----------------------------------------------------------------------------
 devweb: db
-	@echo "Starting QGIS Login project in development mode..."
+	@echo "Starting QGIS Auth project in development mode..."
 	docker compose -p $(PROJECT_ID) up --no-deps keycloak

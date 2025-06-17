@@ -1,13 +1,13 @@
-# QGIS Keycloak Login Website
+# QGIS Keycloak Auth Website
 
-This repository contains the setup for our login service using Keycloak.
+This repository contains the setup for our auth service using Keycloak.
 
 ## Development setup
 
 - Clone the repository and enter the directory:
 ```sh
-git clone https://github.com/Xpirix/QGIS-Login-Website.git
-cd QGIS-Login-Website
+git clone https://github.com/Xpirix/QGIS-Auth-Website.git
+cd QGIS-Auth-Website
 ```
 
 - Generate, edit the .env file:
