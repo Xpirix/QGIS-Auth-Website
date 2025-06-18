@@ -53,6 +53,57 @@ kill:
 	@echo "------------------------------------------------------------------"
 	@docker compose -p $(PROJECT_ID) kill $(c)
 
+shell:
+	@echo
+	@echo "------------------------------------------------------------------"
+	@echo "Shelling into the Keycloak container"
+	@echo "------------------------------------------------------------------"
+	@docker compose -p $(PROJECT_ID) exec keycloak bash
+
+import-users:
+	@echo
+	@echo "------------------------------------------------------------------"
+	@echo "Importing users from a JSON file into Keycloak"
+	@echo "------------------------------------------------------------------"
+	@docker compose -p $(PROJECT_ID) exec keycloak /opt/keycloak/bin/kc.sh import --file /data/users.json
+
+send-password-reset:
+	@echo "\nSending password resets via host API calls..."
+	
+	# Get admin token
+	@echo "1. Getting admin token..."
+	@TOKEN=$$(curl -s -X POST \
+		"http://localhost:8081/realms/master/protocol/openid-connect/token" \
+		-H "Content-Type: application/x-www-form-urlencoded" \
+		-d "client_id=admin-cli" \
+		-d "username=$(u)" \
+		-d "password=$(p)" \
+		-d "grant_type=password" | \
+		jq -r '.access_token')
+	
+	# Get user IDs
+	@echo "$$TOKEN"
+	@echo "2. Fetching user IDs..."
+	@RAW_USERS=$$(curl -s \
+		"http://localhost:8081/admin/realms/$(r)/users" \
+		-H "Authorization: Bearer $$TOKEN")
+	@echo "Raw user data:"
+	@echo "$$RAW_USERS" | jq .
+	@USER_IDS=$$(echo "$$RAW_USERS" | jq -r '.[].id')
+	
+	# Send reset emails
+	@echo "3. Sending resets to $$(echo "$$USER_IDS" | wc -w) users..."
+	@for ID in $$USER_IDS; do \
+		echo "Processing $$ID..."; \
+		curl -s -X PUT \
+			"http://localhost:8081/admin/realms/$(r)/users/$$ID/execute-actions-email" \
+			-H "Authorization: Bearer $$TOKEN" \
+			-H "Content-Type: application/json" \
+			-d '["UPDATE_PASSWORD"]'; \
+	done
+	
+	@echo "Complete"
+
 # ----------------------------------------------------------------------------
 #    P R O D U C T I O N     C O M M A N D S
 # ----------------------------------------------------------------------------
@@ -86,4 +137,4 @@ nginx-logs:
 # ----------------------------------------------------------------------------
 devweb: db
 	@echo "Starting QGIS Auth project in development mode..."
-	docker compose -p $(PROJECT_ID) up --no-deps keycloak
+	docker compose -p $(PROJECT_ID) up keycloak

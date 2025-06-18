@@ -18,6 +18,8 @@ services:
       - postgres_data:/opt/postgres/data
       - ${QGIS_AUTH_BACKUP_VOLUME}:/backups
     restart: unless-stopped
+    healthcheck:
+      test: "POSTGRES_PASS=$${DATABASE_PASSWORD} pg_isready -h 127.0.0.1 -U ${DATABASE_USERNAME} -d ${DATABASE_NAME}"
     networks:
       internal:
 
@@ -36,6 +38,8 @@ services:
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:-password}
     ports:
       - 8081:8080
+    volumes:
+      - ./data:/data
     depends_on:
       db:
         condition: service_healthy
@@ -75,7 +79,8 @@ services:
     volumes:
       - ${QGIS_AUTH_BACKUP_VOLUME}:/backups
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       # take care to let the project name below match that
       # declared in the top of the makefile
