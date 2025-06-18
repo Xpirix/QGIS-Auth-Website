@@ -31,6 +31,12 @@ logs:
 	@echo "------------------------------------------------------------------"
 	@docker compose -p $(PROJECT_ID) logs -f $(c)
 
+build:
+	@echo
+	@echo "------------------------------------------------------------------"
+	@echo "Building all or a specific container(s)"
+	@echo "------------------------------------------------------------------"
+	@docker compose -p $(PROJECT_ID) build $(c)
 
 start:
 	@echo
@@ -68,41 +74,24 @@ import-users:
 	@docker compose -p $(PROJECT_ID) exec keycloak /opt/keycloak/bin/kc.sh import --file /data/users.json
 
 send-password-reset:
-	@echo "\nSending password resets via host API calls..."
-	
-	# Get admin token
-	@echo "1. Getting admin token..."
-	@TOKEN=$$(curl -s -X POST \
-		"http://localhost:8081/realms/master/protocol/openid-connect/token" \
-		-H "Content-Type: application/x-www-form-urlencoded" \
-		-d "client_id=admin-cli" \
-		-d "username=$(u)" \
-		-d "password=$(p)" \
-		-d "grant_type=password" | \
-		jq -r '.access_token')
-	
-	# Get user IDs
-	@echo "$$TOKEN"
-	@echo "2. Fetching user IDs..."
-	@RAW_USERS=$$(curl -s \
-		"http://localhost:8081/admin/realms/$(r)/users" \
-		-H "Authorization: Bearer $$TOKEN")
-	@echo "Raw user data:"
-	@echo "$$RAW_USERS" | jq .
-	@USER_IDS=$$(echo "$$RAW_USERS" | jq -r '.[].id')
-	
-	# Send reset emails
-	@echo "3. Sending resets to $$(echo "$$USER_IDS" | wc -w) users..."
-	@for ID in $$USER_IDS; do \
-		echo "Processing $$ID..."; \
-		curl -s -X PUT \
-			"http://localhost:8081/admin/realms/$(r)/users/$$ID/execute-actions-email" \
-			-H "Authorization: Bearer $$TOKEN" \
-			-H "Content-Type: application/json" \
-			-d '["UPDATE_PASSWORD"]'; \
-	done
-	
-	@echo "Complete"
+	@echo
+	@echo "------------------------------------------------------------------"
+	@echo "Sending password reset email to all users in Keycloak"
+	@echo "------------------------------------------------------------------"
+	@docker run --rm -it \
+		-e SERVER_URL=$(url) \
+		-e REALM=$(r) \
+		-e ADMIN_USER=$(u) \
+		-e ADMIN_PASSWORD=$(p) \
+		-v $(PWD):/app \
+		-w /app \
+		python:3.13-slim bash -c "\
+			pip install python-keycloak && \
+			./scripts/send_password_reset.py \
+				--server-url \$${SERVER_URL} \
+				--realm \$${REALM} \
+				--admin-user \$${ADMIN_USER} \
+				--admin-password \$${ADMIN_PASSWORD}"
 
 # ----------------------------------------------------------------------------
 #    P R O D U C T I O N     C O M M A N D S
