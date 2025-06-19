@@ -73,6 +73,7 @@ import-users:
 	@echo "------------------------------------------------------------------"
 	@docker compose -p $(PROJECT_ID) exec keycloak /opt/keycloak/bin/kc.sh import --file /data/users.json
 
+
 send-password-reset:
 	@echo
 	@echo "------------------------------------------------------------------"
@@ -92,6 +93,30 @@ send-password-reset:
 				--realm \$${REALM} \
 				--admin-user \$${ADMIN_USER} \
 				--admin-password \$${ADMIN_PASSWORD}"
+
+# send-password-reset-host:
+# 	@echo "\nSending password resets via host-executed container commands..."
+# 	@echo "1. Getting admin token..."
+# 	@TOKEN=$$(docker compose -p $(PROJECT_ID) exec keycloak bash -c '\
+# 		/opt/keycloak/bin/kcadm.sh config credentials \
+# 			--server http://localhost:8080 \
+# 			--realm master \
+# 			--user $(u) \
+# 			--password $(p) >/dev/null; \
+# 		cat ~/.keycloak/kcadm.config | grep "token" | cut -d\" -f4'); \
+# 	echo "2. Fetching user IDs...";
+# 	@USER_IDS=$$(docker compose -p $(PROJECT_ID) exec keycloak bash -c '\
+# 		/opt/keycloak/bin/kcadm.sh get users -r $(r) --fields id | \
+# 		grep -oE "[a-f0-9]{8}-([a-f0-9]{4}-){3}[a-f0-9]{12}"'); \
+# 	echo "3. Sending resets to $$(echo "$$USER_IDS" | wc -w) users..."; \
+# 	for ID in $$USER_IDS; do \
+# 		echo "Sending to $$ID"; \
+# 		docker compose -p $(PROJECT_ID) exec keycloak bash -c '\
+# 			/opt/keycloak/bin/kcadm.sh update users/'"$$ID"'/execute-actions-email \
+# 				-r $(r) \
+# 				-s 'actions=["UPDATE_PASSWORD"]''; \
+# 	done; \
+# 	echo "Complete"
 
 # ----------------------------------------------------------------------------
 #    P R O D U C T I O N     C O M M A N D S
