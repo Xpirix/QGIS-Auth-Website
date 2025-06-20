@@ -73,6 +73,34 @@ import-users:
 	@echo "------------------------------------------------------------------"
 	@docker compose -p $(PROJECT_ID) exec keycloak /opt/keycloak/bin/kc.sh import --file /data/users.json
 
+set-manage-account-role:
+	@echo "\nSetting 'manage-account' role for all users..."
+	@docker compose -p $(PROJECT_ID) exec keycloak bash -c '\
+		/opt/keycloak/bin/kcadm.sh config credentials \
+			--server http://localhost:8080 \
+			--realm master \
+			--user $(u) \
+			--password $(p); \
+		\
+		echo "Getting account client ID..."; \
+		ACCOUNT_CLIENT_ID=$$(/opt/keycloak/bin/kcadm.sh get clients -r $(r) -q clientId=account --fields id --format csv --noquotes); \
+		echo "Account client ID: $$ACCOUNT_CLIENT_ID"; \
+		\
+		echo "Fetching manage-account role ID..."; \
+		ROLE_ID=$$(/opt/keycloak/bin/kcadm.sh get clients/$$ACCOUNT_CLIENT_ID/roles -r $(r) -q name=manage-account --fields id --format csv --noquotes); \
+		echo "manage-account role ID: $$ROLE_ID"; \
+		\
+		echo "Processing users..."; \
+		users=$$(/opt/keycloak/bin/kcadm.sh get users -r $(r) --fields id --format csv --noquotes | grep -oE "[a-f0-9]{8}-([a-f0-9]{4}-){3}[a-f0-9]{12}"); \
+		for user_id in $$users; do \
+			echo "Adding role to user $$user_id"; \
+			/opt/keycloak/bin/kcadm.sh add-roles \
+				-r $(r) \
+				--uid $$user_id \
+				--cclientid account \
+				--rolename manage-account; \
+		done; \
+		echo "Completed for $$(echo "$$users" | wc -w) users"'
 
 send-password-reset:
 	@echo
