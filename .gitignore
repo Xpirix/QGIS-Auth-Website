@@ -1,3 +1,5 @@
 .env
 data/users.json
 venv
+.vscode
+.vscode-extensions
