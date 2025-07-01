@@ -21,10 +21,10 @@ if [ $# -eq 1 ]; then
 			ln -s /etc/nginx/sites-available/$CONF_FILE /etc/nginx/conf.d/$CONF_FILE
 			exec nginx -g "daemon off;"
 			;;
-		# Staging SSL mode, run using uwsgi
+		# Staging mode, run using uwsgi
 		[Ss][Tt][Aa][Gg][Ii][Nn][Gg][-][Ss][Ss][Ll])
-			echo "Run in staging SSL mode"
-			CONF_FILE=staging-ssl.conf
+			echo "Run in staging mode"
+			CONF_FILE=staging.conf
 			ln -s /etc/nginx/sites-available/$CONF_FILE /etc/nginx/conf.d/$CONF_FILE
 			exec nginx -g "daemon off;"
 			;;
