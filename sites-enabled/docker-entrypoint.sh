@@ -22,7 +22,7 @@ if [ $# -eq 1 ]; then
 			exec nginx -g "daemon off;"
 			;;
 		# Staging mode, run using uwsgi
-		[Ss][Tt][Aa][Gg][Ii][Nn][Gg][-][Ss][Ss][Ll])
+		[Ss][Tt][Aa][Gg][Ii][Nn][Gg])
 			echo "Run in staging mode"
 			CONF_FILE=staging.conf
 			ln -s /etc/nginx/sites-available/$CONF_FILE /etc/nginx/conf.d/$CONF_FILE
