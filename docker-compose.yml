@@ -42,6 +42,7 @@ services:
       - 8081:8080
     volumes:
       - ./data:/data
+      - ./themes/dist_keycloak:/opt/keycloak/providers/
     depends_on:
       db:
         condition: service_healthy
