@@ -37,6 +37,7 @@ services:
       KC_DB_SCHEMA: ${KC_DB_SCHEMA:-public}
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:-admin}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:-password}
+      KC_HTTP_ENABLED: ${KC_HTTP_ENABLED:-true}
     ports:
       - 8081:8080
     volumes:
